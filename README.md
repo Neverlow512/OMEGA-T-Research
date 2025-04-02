@@ -24,10 +24,10 @@ In this report, I present **OMEGA-T (Orchestrated Mobile Environment Manipulatio
 
 **1.2. Project OMEGA-T Goals:** My primary goals in developing OMEGA-T were to:
 
-    *   *Engineer a framework capable of orchestrating complex, multi-tool automation sequences on iOS.
-    *   *Demonstrate the integration of UI automation (Appium/XCUITest) with dynamic, on-device environment manipulation tools (proxy managers, location spoofers, containerization).
-    *   *Apply this framework to fully automate the Tinder iOS account registration workflow as a practical case study.
-    *   *Analyze the technical requirements, effectiveness, and security implications of this orchestrated automation approach.
+*   Engineer a framework capable of orchestrating complex, multi-tool automation sequences on iOS.
+*   Demonstrate the integration of UI automation (Appium/XCUITest) with dynamic, on-device environment manipulation tools (proxy managers, location spoofers, containerization).
+*   Apply this framework to fully automate the Tinder iOS account registration workflow as a practical case study.
+*   Analyze the technical requirements, effectiveness, and security implications of this orchestrated automation approach.
 
 **1.3. Scope and Context:** This research specifically targets the standard Tinder user registration pathway on iOS, beginning with phone number verification and proceeding through profile completion. While I observed advanced anti-bot systems like Arkose Labs in other parts of the application, analyzing and bypassing those specific challenges during *registration* was designated out-of-scope for *this* OMEGA-T study, forming the core of my separate, follow-up research.
 
