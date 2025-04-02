@@ -139,6 +139,7 @@ graph TD
     WDA           -- "UI Automation" -->           NewTerm
     WDA           -- "UI Automation" -->           Crane
     WDA           -- "UI Automation" -->           Photos
+```
 
 This architecture highlights the orchestration required, where the Python engine (`tinder.py`) acts as the central controller, managing interactions between the user configuration (via C2), the target application (via Appium), environmental control tools on iOS (also via Appium), and external web services.
 ---
