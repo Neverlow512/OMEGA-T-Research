@@ -1,10 +1,10 @@
 
 
-##OMEGA-T: An Orchestrated Mobile Environment Manipulation Framework for Scalable iOS Account Generation Analysis (Tinder Case Study)
+**OMEGA-T: An Orchestrated Mobile Environment Manipulation Framework for Scalable iOS Account Generation Analysis (Tinder Case Study)**
 
 **Author:** Neverlow512
 
-**Date:**02 April 2025
+**Date:** 02 April 2025
 
 **Classification:** TLP:WHITE (Suitable for Public Release)
 
