@@ -55,8 +55,63 @@ I designed OMEGA-T with several interconnected subsystems, reflecting the code s
 *   **2. Automation & Orchestration Engine (`tinder.py`):** This is the main Python script performing the heavy lifting. It parses command-line arguments, establishes the Appium `webdriver.Remote` session, and executes the `createAccount` function which contains the main workflow logic. It houses helper functions for specific tasks: environment manipulation (`crane`, `deleteContainer`, `switchProxy`, `changeLocation`), SMS API interaction (`buyNumber`, `checkNumber`, `smsHandler`), UI interaction (`click_element`, profile handlers referencing `tinder_paths.py`), and resource management (`deleteUsedPhotos`). It explicitly handles SIGUSR1/SIGUSR2 for pause/unpause functionality via the `signal` module and `check_pause()` polling within its loops. Killswitch logic is implemented based on time and retries passed from the C2. Progress and results are logged.
 *   **3. UI Element Definitions (`tinder_paths.py`):** To improve maintainability, I externalized the complex XPath locators for Tinder's profile customization screens into this separate Python dictionary, referenced by `tinder.py`.
 
-**(An architecture diagram showing C2 -> Orchestrator -> Appium -> iOS [Tinder + Helper Apps] -> SMS API would significantly clarify this section)**
+```mermaid
+graph TD
+    subgraph "Operator Interaction"
+        User[Operator] -- Interacts --> Browser[Web Browser]
+    end
 
+    subgraph "Host Control Machine"
+        Browser -- HTTP Requests/HTML/JS --> C2[Flask C2 Web Panel\n(tinder-panel.py)]
+        C2 -- Reads/Writes --> ConfigJson[(config.json\nAPI Keys)]
+        C2 -- Launches / Signals --> Orchestrator[Python Orchestration Engine\n(tinder.py)]
+        Orchestrator -- WebDriver Commands --> Appium[Appium Server]
+        Orchestrator -- Writes --> LogFiles[/account_creation.log/]
+        Orchestrator -- Writes --> OutputFile[/tokens.txt/]
+        Browser -- Reads/Writes --> LocalStorage[(Browser Local Storage\nUI Settings)]
+    end
+
+    subgraph "External Services"
+        SMSAPI[SMS Verification API\n(SMSPool/DaisySMS)]
+        GeoIPAPI[GeoIP Lookup API\n(ipinfo.io)]
+    end
+
+    subgraph "Target Jailbroken iOS Device"
+        Appium -- XCUITest Protocol --> XCUITest[XCUITest Driver]
+        XCUITest -- UI Automation --> TinderApp[Tinder App]
+        XCUITest -- UI Automation --> ShadowrocketApp[Shadowrocket App]
+        XCUITest -- UI Automation --> NewTermApp[NewTerm App]
+        XCUITest -- UI Automation --> CraneApp[Crane App]
+        XCUITest -- UI Automation --> PhotosApp[Photos App]
+        NewTermApp -- Executes Cmd --> LocsimUtil[locsim Utility]
+    end
+
+    %% Data/Control Flow Arrows
+    Orchestrator -- API Call --> SMSAPI
+    Orchestrator -- API Call (Proxied) --> GeoIPAPI
+
+    %% Environment Manipulation Control Flow
+    Orchestrator -- Instructs via Appium/XCUITest --> ShadowrocketApp
+    Orchestrator -- Instructs via Appium/XCUITest --> NewTermApp
+    Orchestrator -- Instructs via Appium/XCUITest --> CraneApp
+
+    %% Application Interaction
+    Orchestrator -- Instructs via Appium/XCUITest --> TinderApp
+    Orchestrator -- Instructs via Appium/XCUITest --> PhotosApp
+
+    %% Network Flow Indication
+    TinderApp --> |Network Traffic| ShadowrocketApp
+    ShadowrocketApp --> |Proxied Traffic| Internet[Internet]
+
+
+    %% Style for clarity
+    classDef host fill:#f9f,stroke:#333,stroke-width:2px;
+    classDef device fill:#ccf,stroke:#333,stroke-width:2px;
+    classDef external fill:#cfc,stroke:#333,stroke-width:2px;
+    class C2,Orchestrator,Appium,LogFiles,OutputFile,ConfigJson,Browser,LocalStorage host;
+    class XCUITest,TinderApp,ShadowrocketApp,NewTermApp,CraneApp,PhotosApp,LocsimUtil device;
+    class SMSAPI,GeoIPAPI,Internet external;
+```
 ---
 
 **4. Deep Dive: OMEGA-T Capabilities & Operational Walkthrough**
