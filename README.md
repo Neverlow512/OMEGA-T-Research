@@ -116,7 +116,7 @@ graph TD
     %% C2 <-> Engine & Host Components
     C2            -- "Launches / Sends Signals" --> Engine
     C2            <-->                            ConfigFile
-    Engine        -- "Reads Config" -->            C2 % Assumes config passed, not read directly
+    Engine        -- "Reads Config" -->            C2
     Engine        -- "Reads XPaths" -->            PathsFile
     Engine        -- "Writes Logs" -->             LogFile
     Engine        -- "Writes Tokens" -->           TokenFile
