@@ -1,6 +1,6 @@
-
-
 **OMEGA-T: An Orchestrated Mobile Environment Manipulation Framework for Scalable iOS Account Generation Analysis (Tinder Case Study)**
+
+> **Note on Code Availability:** Please be advised that due to the sensitive nature of the automation techniques and potential security risks discussed herein, the source code files (`.py`) for the OMEGA-T framework are not being released publicly alongside this research paper. Furthermore, no pseudocode beyond the illustrative examples provided within the document will be made available. This decision aligns with responsible disclosure considerations.
 
 **Author:** Neverlow512
 
