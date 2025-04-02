@@ -65,37 +65,80 @@ I designed OMEGA-T with several interconnected subsystems, reflecting the code s
 
 ```mermaid
 graph TD
-    Operator["Operator via Browser"] --> C2["Flask C2 Interface<br>(tinder-panel.py)"]
+    %% ================= Styles Definition =================
+    classDef operatorStyle fill:#f9f9f9,stroke:#333,stroke-width:1px,color:#333
+    classDef c2Style fill:#e6f2ff,stroke:#005cb3,stroke-width:2px,color:#001f3d,font-weight:bold
+    classDef engineStyle fill:#ddeeff,stroke:#004080,stroke-width:2px,color:#001a33,font-weight:bold
+    classDef hostAppStyle fill:#f0f0f0,stroke:#666,stroke-width:1px,color:#333
+    classDef dataStyle fill:#fff2cc,stroke:#b38f00,stroke-width:1px,color:#665200,shape:cylinder
+    classDef externalApiStyle fill:#e6ffe6,stroke:#006600,stroke-width:1px,color:#003300
+    classDef iosCoreStyle fill:#e0e0e0,stroke:#555,stroke-width:2px,color:#222,font-weight:bold
+    classDef iosAppStyle fill:#ffe6f9,stroke:#990073,stroke-width:1px,color:#4d0039,shape:stadium
+    classDef targetDeviceStyle fill:#f5f5f5,stroke:#777,stroke-width:1px,color:#444
 
+    %% ================= Node Definitions =================
+    Operator["Operator via Browser"]:::operatorStyle
+    C2["<b>Flask C2 Interface</b><br>(tinder-panel.py)"]:::c2Style
+
+    %% ---------- Host Machine Subgraph ----------
     subgraph "Host Machine (macOS)"
-        C2 -- "Serves UI / Receives Config" --> Operator
-        C2 -- "Launches / Sends Signals" --> Engine["Python Orchestration Engine<br>(tinder.py)"]
-        C2 <--> ConfigFile["config.json"]
-        Engine -- "Reads Config" --> C2
-        Engine -- "Reads XPaths" --> PathsFile["tinder_paths.py"]
-        Engine -- "Writes" --> LogFile["account_creation.log"]
-        Engine -- "Writes" --> TokenFile["tokens.txt"]
-        Engine -- "Connects" --> Appium["Appium Server v2.x"]
-
-        Engine -- "Repeats Cycle<br>for Next Account Input" --> Engine
+        Engine["<b>Python Orchestration Engine</b><br>(tinder.py)"]:::engineStyle
+        ConfigFile[("config.json")]:::dataStyle
+        PathsFile["tinder_paths.py"]:::hostAppStyle
+        LogFile[("account_creation.log")]:::dataStyle
+        TokenFile[("tokens.txt")]:::dataStyle
+        Appium["Appium Server v2.x"]:::hostAppStyle
     end
 
+    %% ---------- External Services Subgraph ----------
     subgraph "External Services"
-        Engine -- "HTTP API Call" --> SMS_API["SMS Verification API<br>(Generic Provider)"]
-        Engine -- "HTTP API Call<br>(via Proxy)" --> GeoIP["GeoIP Service<br>(ipinfo.io)"]
+        SMS_API["SMS Verification API<br>(Generic Provider)"]:::externalApiStyle
+        GeoIP["GeoIP Service<br>(ipinfo.io)"]:::externalApiStyle
     end
 
+    %% ---------- Target Device Subgraph ----------
     subgraph "Target Jailbroken iOS Device"
-        Appium -- "Manages" --> WDA["WebDriverAgentRunner"]
-        WDA -- "UI Automation" --> Tinder["Tinder App"]
-        WDA -- "UI Automation" --> Shadowrocket["Shadowrocket App<br>(Proxy Control)"]
-        WDA -- "UI Automation" --> NewTerm["NewTerm App<br>(Executing locsim)"]
-        WDA -- "UI Automation" --> Crane["Crane App<br>(Container Mgmt)"]
-        WDA -- "UI Automation" --> Photos["Photos App<br>(Image Selection)"]
+        WDA["<b>WebDriverAgentRunner</b>"]:::iosCoreStyle
+        Tinder[("Tinder App")]:::iosAppStyle
+        Shadowrocket[("Shadowrocket App<br>(Proxy Control)")]:::iosAppStyle
+        NewTerm[("NewTerm App<br>(Executing locsim)")]:::iosAppStyle
+        Crane[("Crane App<br>(Container Mgmt)")]:::iosAppStyle
+        Photos[("Photos App<br>(Image Selection)")]:::iosAppStyle
     end
 
-    Appium --> TargetDevice["Target Device"]
-```
+    TargetDevice["Target Device"]:::targetDeviceStyle
+
+    %% ================= Link Definitions =================
+    %% Operator <-> C2
+    Operator      -- "User Config & Control" -->   C2
+    C2            -- "Serves UI / Receives Config" --> Operator
+
+    %% C2 <-> Engine & Host Components
+    C2            -- "Launches / Sends Signals" --> Engine
+    C2            <-->                            ConfigFile
+    Engine        -- "Reads Config" -->            C2 % Assumes config passed, not read directly
+    Engine        -- "Reads XPaths" -->            PathsFile
+    Engine        -- "Writes Logs" -->             LogFile
+    Engine        -- "Writes Tokens" -->           TokenFile
+    Engine        -- "Connects" -->                Appium
+
+    %% Engine Iteration Loop
+    Engine        -- "Repeats Cycle<br>for Next Input" --> Engine
+
+    %% Engine <-> External Services
+    Engine        -- "HTTP API Call" -->           SMS_API
+    Engine        -- "HTTP API Call<br>(via Proxy)" --> GeoIP
+
+    %% Host <-> Target Device Core
+    Appium        -- "Manages Session" -->         WDA
+    Appium        -- "Forwards Commands To" -->    TargetDevice
+
+    %% WDA <-> Target Apps
+    WDA           -- "UI Automation" -->           Tinder
+    WDA           -- "UI Automation" -->           Shadowrocket
+    WDA           -- "UI Automation" -->           NewTerm
+    WDA           -- "UI Automation" -->           Crane
+    WDA           -- "UI Automation" -->           Photos
 
 This architecture highlights the orchestration required, where the Python engine (`tinder.py`) acts as the central controller, managing interactions between the user configuration (via C2), the target application (via Appium), environmental control tools on iOS (also via Appium), and external web services.
 ---
