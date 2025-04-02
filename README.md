@@ -14,7 +14,7 @@
 
 **Executive Summary:**
 
-In this report, I present **OMEGA-T (Orchestrated Mobile Environment Manipulation Framework - Tinder)**, a proof-of-concept system I designed and built to rigorously evaluate the feasibility of automating user account generation at scale on the iOS platform, using Tinder as a representative target. My approach with OMEGA-T uniquely integrates headless UI automation via Appium/XCUITest with sophisticated, programmatically controlled manipulation of the mobile operating environment. Key capabilities I implemented include dynamic network proxy configuration leveraging the Shadowrocket application, precision GPS location spoofing via the `locsim` utility, and robust application state isolation using the Crane containerization system, requiring jailbreak instrumentation on the target device. The framework is managed through a custom Flask-based web interface I developed, providing command-and-control (C2) capabilities over a Python-based engine that executes the end-to-end Tinder onboarding workflow. This process encompasses automated SMS verification using external APIs (I decided not to provide the names of the providers due to security risks), detailed profile construction (including configurable handling of interests, habits, and optional fields like school), multi-photo uploads, and navigation of post-registration prompts. OMEGA-T provides a tangible methodology for assessing the resilience of mobile onboarding flows against automated threats that combine UI interaction with environment control. My findings underscore the potential for scaled abuse and serve as crucial groundwork for my subsequent research detailed in *"Breaking the Unbreakable: Analyzing Arkose Labs' CAPTCHA Resilience in iOS Apps"*. Recognizing the sensitivity of automation techniques, I deliberately deferred the public dissemination of this OMEGA-T analysis for approximately six months following my initial validation to mitigate potential immediate risks.
+In this report, I present **OMEGA-T (Orchestrated Mobile Environment Manipulation Framework - Tinder)**, a proof-of-concept system I designed and built to rigorously evaluate the feasibility of automating user account generation at scale on the iOS platform, using Tinder as a representative target. My approach with OMEGA-T effectively integrates headless UI automation via Appium/XCUITest with sophisticated, programmatically controlled manipulation of the mobile operating environment. Key capabilities I implemented include dynamic network proxy configuration leveraging the Shadowrocket application, precision GPS location spoofing via the `locsim` utility, and robust application state isolation using the Crane containerization system, requiring jailbreak instrumentation on the target device. The framework is managed through a custom Flask-based web interface I developed, providing command-and-control (C2) capabilities over a Python-based engine that executes the end-to-end Tinder onboarding workflow. This process encompasses automated SMS verification using external APIs (I decided not to provide the names of the providers due to security risks), detailed profile construction (including configurable handling of interests, habits, and optional fields like school), multi-photo uploads, and navigation of post-registration prompts. OMEGA-T provides a tangible methodology for assessing the resilience of mobile onboarding flows against automated threats that combine UI interaction with environment control. My findings underscore the potential for scaled abuse and serve as crucial groundwork for my subsequent research detailed in *"Breaking the Unbreakable: Analyzing Arkose Labs' CAPTCHA Resilience in iOS Apps"*. Recognizing the sensitivity of automation techniques, I deliberately deferred the public dissemination of this OMEGA-T analysis for approximately six months following my initial validation to mitigate potential immediate risks.
 
 ---
 
@@ -241,6 +241,9 @@ The successful implementation and operation of the OMEGA-T framework relies on a
 
 **6. Observed Effectiveness & Operational Constraints**
 
++   *During testing periods, I observed high success rates using OMEGA-T under controlled conditions: typically over 90% for accounts targeted in European regions and around 80% for those in the US. This validates the viability of the orchestrated approach. Interestingly, I also noted variations in the subsequent lifespan or stability of the generated accounts, suggesting potential downstream detection or limitations imposed by the platform even after successful onboarding, though a deep analysis of these post-creation factors was outside OMEGA-T's primary scope.*
++   *While I cannot tell these for sure, security seems much more strict in the USA region. During some days, the success rate was under 30%. I didn't delve too deep into this as it was not one of my objectives. However, Tinder seems to have an interesting pattern of cycles where it improves security during some days of the week or times of the month*
+
 *   **Effectiveness:** I found OMEGA-T to be highly effective in automating the Tinder onboarding under controlled conditions, validating the orchestrated approach for an indefinite number of accounts, all running at the same time. (I consider this a major flaw, however, very hard to predict and defend against)
 *   **Constraints:**
     *   **UI Brittleness:** The primary operational challenge is the framework's sensitivity to Tinder UI updates breaking XPath locators. However, with basic path recognition adaptation, this can dynamically be overcome.
@@ -272,11 +275,11 @@ Based on my findings, effective defenses would likely involve:
 
 ---
 
-**9. Future Research Directions**
+**9. Future Research Directions (if necessary)**
 
 OMEGA-T provides a solid foundation. My immediate next steps involve:
 
-*   **UI Resilience:** Exploring more robust element identification methods, implementing advanced ML-based behavior and  path recognition.
+*   **UI Resilience:** Exploring more robust element identification methods, implementing advanced ML-based behavior and path recognition.
 *   **Advanced Evasion:** Researching techniques to counter more sophisticated fingerprinting and behavioral analysis.
 *   **Analyzing Advanced Defenses:** Leveraging the OMEGA-T framework and methodology to systematically analyze and develop bypass techniques for advanced anti-bot systems. This is the focus of my next report: **"Breaking the Unbreakable: Analyzing Arkose Labs' CAPTCHA Resilience in iOS Apps"**.
 
