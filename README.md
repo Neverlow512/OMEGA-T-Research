@@ -65,33 +65,34 @@ I designed OMEGA-T with several interconnected subsystems, reflecting the code s
 
 ```mermaid
 graph TD
-    Operator[Operator via Browser] --> C2[Flask C2 Interface<br>(tinder-panel.py)]
+    Operator["Operator via Browser"] --> C2["Flask C2 Interface<br>(tinder-panel.py)"]
 
     subgraph "Host Machine (macOS)"
-        C2 -- Serves UI / Receives Config --> Operator
-        C2 -- Launches / Sends Signals --> Engine[Python Orchestration Engine<br>(tinder.py)]
-        C2 <--> ConfigFile[config.json]
-        Engine -- Reads Config --> C2
-        Engine -- Reads XPaths --> PathsFile[tinder_paths.py]
-        Engine -- Writes --> LogFile[account_creation.log]
-        Engine -- Writes --> TokenFile[tokens.txt]
-        Engine -- Connects --> Appium[Appium Server v2.x]
+        C2 -- "Serves UI / Receives Config" --> Operator
+        C2 -- "Launches / Sends Signals" --> Engine["Python Orchestration Engine<br>(tinder.py)"]
+        C2 <--> ConfigFile["config.json"]
+        Engine -- "Reads Config" --> C2
+        Engine -- "Reads XPaths" --> PathsFile["tinder_paths.py"]
+        Engine -- "Writes" --> LogFile["account_creation.log"]
+        Engine -- "Writes" --> TokenFile["tokens.txt"]
+        Engine -- "Connects" --> Appium["Appium Server v2.x"]
     end
 
     subgraph "External Services"
-        Engine -- HTTP API Call --> SMS_API[SMS Verification API<br>(Generic Provider)]
-        Engine -- HTTP API Call<br>(via Proxy) --> GeoIP[GeoIP Service<br>(ipinfo.io)]
+        Engine -- "HTTP API Call" --> SMS_API["SMS Verification API<br>(Generic Provider)"]
+        Engine -- "HTTP API Call<br>(via Proxy)" --> GeoIP["GeoIP Service<br>(ipinfo.io)"]
     end
 
     subgraph "Target Jailbroken iOS Device"
-        Appium -- Manages --> WDA[WebDriverAgentRunner]
-        WDA -- UI Automation --> Tinder[Tinder App]
-        WDA -- UI Automation --> Shadowrocket[Shadowrocket App<br>(Proxy Control)]
-        WDA -- UI Automation --> NewTerm[NewTerm App<br>(Executing locsim)]
-        WDA -- UI Automation --> Crane[Crane App<br>(Container Mgmt)]
-        WDA -- UI Automation --> Photos[Photos App<br>(Image Selection)]
+        Appium -- "Manages" --> WDA["WebDriverAgentRunner"]
+        WDA -- "UI Automation" --> Tinder["Tinder App"]
+        WDA -- "UI Automation" --> Shadowrocket["Shadowrocket App<br>(Proxy Control)"]
+        WDA -- "UI Automation" --> NewTerm["NewTerm App<br>(Executing locsim)"]
+        WDA -- "UI Automation" --> Crane["Crane App<br>(Container Mgmt)"]
+        WDA -- "UI Automation" --> Photos["Photos App<br>(Image Selection)"]
     end
-    Appium --> TargetDevice
+
+    Appium --> TargetDevice["Target Device"]
 ```
 
 This architecture highlights the orchestration required, where the Python engine (`tinder.py`) acts as the central controller, managing interactions between the user configuration (via C2), the target application (via Appium), environmental control tools on iOS (also via Appium), and external web services.
