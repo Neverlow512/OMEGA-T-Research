@@ -14,7 +14,7 @@
 
 **Executive Summary:**
 
-In this report, I present **OMEGA-T (Orchestrated Mobile Environment Manipulation Framework - Tinder)**, a proof-of-concept system I designed and built to rigorously evaluate the feasibility of automating user account generation at scale on the iOS platform, using Tinder as a representative target. My approach with OMEGA-T uniquely integrates headless UI automation via Appium/XCUITest with sophisticated, programmatically controlled manipulation of the mobile operating environment. Key capabilities I implemented include dynamic network proxy configuration leveraging the Shadowrocket application, precision GPS location spoofing via the `locsim` utility, and robust application state isolation using the Crane containerization system, requiring jailbreak instrumentation on the target device. The framework is managed through a custom Flask-based web interface I developed, providing command-and-control (C2) capabilities over a Python-based engine that executes the end-to-end Tinder onboarding workflow. This process encompasses automated SMS verification using external APIs (SMSPool, DaisySMS), detailed profile construction (including configurable handling of interests, habits, and optional fields like school), multi-photo uploads, and navigation of post-registration prompts. OMEGA-T provides a tangible methodology for assessing the resilience of mobile onboarding flows against automated threats that combine UI interaction with environment control. My findings underscore the potential for scaled abuse and serve as crucial groundwork for my subsequent research detailed in *"Breaking the Unbreakable: Analyzing Arkose Labs' CAPTCHA Resilience in iOS Apps"*. Recognizing the sensitivity of automation techniques, I deliberately deferred the public dissemination of this OMEGA-T analysis for approximately six months following my initial validation to mitigate potential immediate risks.
+In this report, I present **OMEGA-T (Orchestrated Mobile Environment Manipulation Framework - Tinder)**, a proof-of-concept system I designed and built to rigorously evaluate the feasibility of automating user account generation at scale on the iOS platform, using Tinder as a representative target. My approach with OMEGA-T uniquely integrates headless UI automation via Appium/XCUITest with sophisticated, programmatically controlled manipulation of the mobile operating environment. Key capabilities I implemented include dynamic network proxy configuration leveraging the Shadowrocket application, precision GPS location spoofing via the `locsim` utility, and robust application state isolation using the Crane containerization system, requiring jailbreak instrumentation on the target device. The framework is managed through a custom Flask-based web interface I developed, providing command-and-control (C2) capabilities over a Python-based engine that executes the end-to-end Tinder onboarding workflow. This process encompasses automated SMS verification using external APIs (I decided not to provide the names of the providers due to security risks), detailed profile construction (including configurable handling of interests, habits, and optional fields like school), multi-photo uploads, and navigation of post-registration prompts. OMEGA-T provides a tangible methodology for assessing the resilience of mobile onboarding flows against automated threats that combine UI interaction with environment control. My findings underscore the potential for scaled abuse and serve as crucial groundwork for my subsequent research detailed in *"Breaking the Unbreakable: Analyzing Arkose Labs' CAPTCHA Resilience in iOS Apps"*. Recognizing the sensitivity of automation techniques, I deliberately deferred the public dissemination of this OMEGA-T analysis for approximately six months following my initial validation to mitigate potential immediate risks.
 
 ---
 
@@ -42,6 +42,7 @@ From an offensive simulation perspective, my strategy with OMEGA-T was to overco
 *   **Implementing Dynamic Context Control:** Actively modifying the network perception (via Shadowrocket proxies), geographical location (via `locsim`), and application state (via Crane containers) for each distinct account creation attempt. This aims to defeat basic fingerprinting tied to static IPs or device state.
 *   **Designing for Scalability:** Creating the Flask C2 panel to manage bulk inputs and control automation runs efficiently.
 *   **Enhancing Realism:** Incorporating configurable options for profile details (hobbies, habits, etc.) to reduce the homogeneity of generated accounts.
+*   **Reproducing Human-Like Behavior:** Unpredictable waiting times, touches, scrolls, and the list goes on. I would prefer to keep the rest for myself as I really don't want these methods to be replicated. 
 
 My core hypothesis was that controlling the *environment* is as critical as controlling the UI for achieving resilient, large-scale automation against mobile platforms.
 
@@ -53,64 +54,47 @@ I designed OMEGA-T with several interconnected subsystems, reflecting the code s
 
 *   **1. C2 & Configuration Interface (`tinder-panel.py`):** The Flask web application serves as the operator's console. It handles requests to start, stop, pause, and unpause the automation engine (`tinder.py`). Its frontend uses JavaScript extensively for dynamic form generation, input collection, configuration saving (to `config.json` via a dedicated endpoint and using `localStorage`), and sending commands to the backend. It verifies target device connectivity using `ios-deploy -c` before initiating the core automation script via `subprocess.Popen`, passing all configurations as command-line arguments.
 *   **2. Automation & Orchestration Engine (`tinder.py`):** This is the main Python script performing the heavy lifting. It parses command-line arguments, establishes the Appium `webdriver.Remote` session, and executes the `createAccount` function which contains the main workflow logic. It houses helper functions for specific tasks: environment manipulation (`crane`, `deleteContainer`, `switchProxy`, `changeLocation`), SMS API interaction (`buyNumber`, `checkNumber`, `smsHandler`), UI interaction (`click_element`, profile handlers referencing `tinder_paths.py`), and resource management (`deleteUsedPhotos`). It explicitly handles SIGUSR1/SIGUSR2 for pause/unpause functionality via the `signal` module and `check_pause()` polling within its loops. Killswitch logic is implemented based on time and retries passed from the C2. Progress and results are logged.
-*   **3. UI Element Definitions (`tinder_paths.py`):** To improve maintainability, I externalized the complex XPath locators for Tinder's profile customization screens into this separate Python dictionary, referenced by `tinder.py`.
+*   **3. UI Element Definitions (`tinder_paths.py`):** To improve maintainability and unpredictable choices, I externalized the complex XPath locators for Tinder's profile customization screens into this separate Python dictionary, referenced by `tinder.py`.
+*   **4. Supporting Infrastructure:**
+    *   **Appium Server:** Runs on the host machine, acting as the bridge translating WebDriver commands from the engine into XCUITest actions on the device.
+    *   **Target iOS Device:** A jailbroken iPhone running the necessary helper applications (Shadowrocket, NewTerm, Crane) and WebDriverAgentRunner.
+    *   **External APIs:** Third-party services for SMS verification and GeoIP lookup.
 
-"graph TD
-    subgraph "Operator Interaction"
-        User[Operator] -- Interacts --> Browser["Web Browser"]
-    end
+      
+**Architecture Diagram (Mermaid Syntax):**
 
-    subgraph "Host Control Machine"
-        Browser -- "HTTP Requests/HTML/JS" --> C2["Flask C2 Web Panel\n(tinder-panel.py)"]
-        C2 -- "Reads/Writes" --> ConfigJson[("config.json\nAPI Keys")]
-        C2 -- "Launches / Signals" --> Orchestrator["Python Orchestration Engine\n(tinder.py)"]
-        Orchestrator -- "WebDriver Commands" --> Appium["Appium Server"]
-        Orchestrator -- Writes --> LogFiles["/account_creation.log/"]
-        Orchestrator -- Writes --> OutputFile["/tokens.txt/"]
-        Browser -- "Reads/Writes" --> LocalStorage[("Browser Local Storage\nUI Settings")]
+```mermaid
+graph TD
+    Operator[Operator via Browser] --> C2[Flask C2 Interface<br>(tinder-panel.py)]
+
+    subgraph "Host Machine (macOS)"
+        C2 -- Serves UI / Receives Config --> Operator
+        C2 -- Launches / Sends Signals --> Engine[Python Orchestration Engine<br>(tinder.py)]
+        C2 <--> ConfigFile[config.json]
+        Engine -- Reads Config --> C2
+        Engine -- Reads XPaths --> PathsFile[tinder_paths.py]
+        Engine -- Writes --> LogFile[account_creation.log]
+        Engine -- Writes --> TokenFile[tokens.txt]
+        Engine -- Connects --> Appium[Appium Server v2.x]
     end
 
     subgraph "External Services"
-        SMSAPI["SMS Verification API\n(SMSPool/DaisySMS)"]
-        GeoIPAPI["GeoIP Lookup API\n(ipinfo.io)"]
+        Engine -- HTTP API Call --> SMS_API[SMS Verification API<br>(Generic Provider)]
+        Engine -- HTTP API Call<br>(via Proxy) --> GeoIP[GeoIP Service<br>(ipinfo.io)]
     end
 
     subgraph "Target Jailbroken iOS Device"
-        Appium -- "XCUITest Protocol" --> XCUITest["XCUITest Driver"]
-        XCUITest -- "UI Automation" --> TinderApp["Tinder App"]
-        XCUITest -- "UI Automation" --> ShadowrocketApp["Shadowrocket App"]
-        XCUITest -- "UI Automation" --> NewTermApp["NewTerm App"]
-        XCUITest -- "UI Automation" --> CraneApp["Crane App"]
-        XCUITest -- "UI Automation" --> PhotosApp["Photos App"]
-        NewTermApp -- "Executes Cmd" --> LocsimUtil["locsim Utility"]
+        Appium -- Manages --> WDA[WebDriverAgentRunner]
+        WDA -- UI Automation --> Tinder[Tinder App]
+        WDA -- UI Automation --> Shadowrocket[Shadowrocket App<br>(Proxy Control)]
+        WDA -- UI Automation --> NewTerm[NewTerm App<br>(Executing locsim)]
+        WDA -- UI Automation --> Crane[Crane App<br>(Container Mgmt)]
+        WDA -- UI Automation --> Photos[Photos App<br>(Image Selection)]
     end
+    Appium --> TargetDevice
+```
 
-    %% Data/Control Flow Arrows
-    Orchestrator -- "API Call" --> SMSAPI
-    Orchestrator -- "API Call (Proxied)" --> GeoIPAPI
-
-    %% Environment Manipulation Control Flow
-    Orchestrator -- "Instructs via Appium/XCUITest" --> ShadowrocketApp
-    Orchestrator -- "Instructs via Appium/XCUITest" --> NewTermApp
-    Orchestrator -- "Instructs via Appium/XCUITest" --> CraneApp
-
-    %% Application Interaction
-    Orchestrator -- "Instructs via Appium/XCUITest" --> TinderApp
-    Orchestrator -- "Instructs via Appium/XCUITest" --> PhotosApp
-
-    %% Network Flow Indication
-    TinderApp --> |"Network Traffic"| ShadowrocketApp
-    ShadowrocketApp --> |"Proxied Traffic"| Internet["Internet"]
-
-
-    %% Style for clarity
-    classDef host fill:#f9f,stroke:#333,stroke-width:2px;
-    classDef device fill:#ccf,stroke:#333,stroke-width:2px;
-    classDef external fill:#cfc,stroke:#333,stroke-width:2px;
-    class C2,Orchestrator,Appium,LogFiles,OutputFile,ConfigJson,Browser,LocalStorage host;
-    class XCUITest,TinderApp,ShadowrocketApp,NewTermApp,CraneApp,PhotosApp,LocsimUtil device;
-    class SMSAPI,GeoIPAPI,Internet external;"
-
+This architecture highlights the orchestration required, where the Python engine (`tinder.py`) acts as the central controller, managing interactions between the user configuration (via C2), the target application (via Appium), environmental control tools on iOS (also via Appium), and external web services.
 ---
 
 **4. Deep Dive: OMEGA-T Capabilities & Operational Walkthrough**
@@ -172,29 +156,50 @@ Here’s a breakdown of the operational sequence I implemented for each account:
 
 **5. Tooling & Environment Specification**
 
-*   **Core:** Python 3.x, Flask, Appium-Python-Client, Requests
-*   **Automation Driver:** Appium Server, XCUITest Driver
-*   **Target App:** Tinder for iOS
-*   **iOS Environment Tools (Mandatory):**
-    *   Shadowrocket (Proxy Control)
-    *   NewTerm (or similar Terminal for command execution)
-    *   `locsim` (Jailbreak Tweak for GPS Spoofing)
-    *   Crane (Jailbreak Tweak/App for App Containerization)
-*   **Device:** **Jailbroken iPhone.** Jailbreak is non-negotiable for `locsim` and Crane, providing the necessary low-level access for environment manipulation.
-*   **Anti-Detection Measure:** To ensure the stability and correct functioning of the target application within the required jailbroken research environment, standard, community-developed anti-jailbreak-detection countermeasures (tweaks) were employed as part of the baseline device setup. The focus of OMEGA-T was *not* on bypassing these specific detections but rather on the higher-level automation orchestration enabled by the jailbroken environment.
-*   **Host:** macOS system.
-*   **Utilities:** `ios-deploy`.
+The successful implementation and operation of the OMEGA-T framework relies on a specific configuration for both the target iOS device and the host control machine:
+
+**5.1. Target iOS Device:**
+*   **Hardware:** iPhone 8 - 12
+*   **Operating System:** iOS 15.7+
+*   **Condition:** **Jailbroken.** A jailbroken state (e.g., via checkra1n, palera1n, dopamine etc.) is a fundamental requirement to enable the necessary system-level access for environment manipulation tools.
+*   **Required iOS Tools/Tweaks:**
+    *   **Package Manager:** Cydia / Sileo / Zebra (as provided by the specific jailbreak).
+    *   **Location Spoofing:** `locsim` (Jailbreak Tweak).
+    *   **Terminal Emulator:** NewTerm (or compatible alternative installed via package manager).
+    *   **Application Containerization:** Crane (Jailbreak Tweak/Application).
+    *   **Proxy Management:** Shadowrocket (Commercial App Store application).
+    *   **Anti-Detection Measures:** Standard, community-developed anti-jailbreak-detection tweaks were employed to ensure target application functionality within the jailbroken research environment. Analysis of these specific bypasses was not within the scope of OMEGA-T.
+
+**5.2. Host Control Machine:**
+*   **Operating System:** **macOS** Sonoma. Required for Xcode dependency and iOS device interaction tooling.
+*   **Core Development Environment:**
+    *   **Xcode:** Full Xcode installation including Command Line Tools (essential for Appium's XCUITest driver and device interaction). Standard signing configuration for WebDriverAgentRunner within Xcode is assumed.
+    *   **Node.js & NPM:** Required for installing and running the Appium server.
+    *   **Homebrew:** Used for installing supporting libraries and dependencies.
+*   **Automation & Orchestration Software:**
+    *   **Appium Server:** v2.x, installed globally via NPM.
+    *   **Appium XCUITest Driver:** installed via `appium driver install`.
+    *   **Python:** Version 3.x.
+    *   **Key Python Libraries:**
+        *   `Appium-Python-Client` v2.7.1
+        *   `Flask` (for the C2 web interface)
+        *   `Requests` (for external API communication)
+        *   `pysocks` (for proxy support in `requests`)
+        *(Note: Standard installation via `pip3` is assumed for these libraries)*
+*   **Device Interaction Utilities:**
+    *   `libimobiledevice` suite (via Homebrew).
+    *   `ios-deploy` (via Homebrew).
 
 ---
 
 **6. Observed Effectiveness & Operational Constraints**
 
-*   **Effectiveness:** I found OMEGA-T to be highly effective in automating the Tinder onboarding under controlled conditions, validating the orchestrated approach.
+*   **Effectiveness:** I found OMEGA-T to be highly effective in automating the Tinder onboarding under controlled conditions, validating the orchestrated approach for an indefinite number of accounts, all running at the same time. (I consider this a major flaw, however, very hard to predict and defend against)
 *   **Constraints:**
-    *   **UI Brittleness:** The primary operational challenge is the framework's sensitivity to Tinder UI updates breaking XPath locators.
-    *   **Toolchain Stability:** Success depends on the consistent behavior of Appium and all integrated iOS tools (Shadowrocket, NewTerm, `locsim`, Crane, anti-JB tweaks).
-    *   **Jailbreak Requirement:** This inherently limits applicability.
-    *   **Detection:** While bypassing basic checks, I assess that the automation patterns are likely detectable by sophisticated behavioral analysis.
+    *   **UI Brittleness:** The primary operational challenge is the framework's sensitivity to Tinder UI updates breaking XPath locators. However, with basic path recognition adaptation, this can dynamically be overcome.
+    *   **Toolchain Stability:** Success depends on the consistent behavior of Appium and all integrated iOS tools (Shadowrocket, NewTerm, `locsim`, Crane, anti-JB tweaks). From my extensive tests, this hasn't been an issue in most scenarios and security measures need to be seriously taken care of in this regard.
+    *   **Jailbreak Requirement:** This inherently limits applicability for normal users but opens an entire new environment, full of exploits for potentially malicious protagonists.
+    *   **Detection:** While bypassing basic checks, I assess that the automation patterns are likely detectable by sophisticated behavioral analysis. However, mimicking human behaviour, taking unpredictable breaks, "making mistakes" when tapping, and randomly changing behavior has shown that the app's detection mechanisms are not sophisticated enough to stop well-designed bots.
 
 ---
 
@@ -203,8 +208,9 @@ Here’s a breakdown of the operational sequence I implemented for each account:
 My development of OMEGA-T highlights:
 
 *   **Limitations of Basic Defenses:** SMS verification and simple IP checks are demonstrably insufficient against orchestrated attacks controlling the environment.
+*   **Limitations of Advanced Defenses:** Jailbreak, Device ID, location, and fingerprint detection mechanisms can be bypassed by advanced software and need urgent upgrades.
 *   **Value of Environment Control:** Programmatic manipulation of network, location, and state significantly enhances automation resilience.
-*   **Feasibility of Scaled Abuse:** Such frameworks make large-scale generation of accounts for malicious purposes technically viable.
+*   **Feasibility of Scaled Abuse:** Such frameworks make large-scale generation of accounts for malicious purposes viable. Some malicious actors could use these vulnerabilities to their advantage, abusing the system.
 
 ---
 
@@ -214,8 +220,8 @@ Based on my findings, effective defenses would likely involve:
 
 *   Server-side behavioral analysis focusing on interaction timings and sequences specific to onboarding.
 *   Advanced device/environment attestation beyond simple checks.
-*   Risk-based deployment of stronger challenges (e.g., advanced CAPTCHAs) during onboarding if automation indicators are detected.
-*   Robust jailbreak detection and response mechanisms.
+*   Risk-based deployment of stronger challenges (e.g., advanced CAPTCHAs) during onboarding if automation indicators are detected. However, these have to be unexpected and not only present during the account creation process. While they might be frustrating for the regular users, these security mechanisms need to be adapted to appear randomly at certain points, whenever the account is being used.
+*   Robust jailbreak detection and response mechanisms. Implementation of reliable location detection, beyond simple checks as not even checking the region and language of the phone is not enough. 
 
 ---
 
@@ -223,7 +229,7 @@ Based on my findings, effective defenses would likely involve:
 
 OMEGA-T provides a solid foundation. My immediate next steps involve:
 
-*   **UI Resilience:** Exploring more robust element identification methods.
+*   **UI Resilience:** Exploring more robust element identification methods, implementing advanced ML-based behavior and  path recognition.
 *   **Advanced Evasion:** Researching techniques to counter more sophisticated fingerprinting and behavioral analysis.
 *   **Analyzing Advanced Defenses:** Leveraging the OMEGA-T framework and methodology to systematically analyze and develop bypass techniques for advanced anti-bot systems. This is the focus of my next report: **"Breaking the Unbreakable: Analyzing Arkose Labs' CAPTCHA Resilience in iOS Apps"**.
 
@@ -231,6 +237,6 @@ OMEGA-T provides a solid foundation. My immediate next steps involve:
 
 **10. Conclusion**
 
-Through the design and implementation of OMEGA-T, I have demonstrated the practical feasibility of achieving scalable, automated account generation on Tinder for iOS by integrating UI automation with dynamic control over the application's perceived environment (network via Shadowrocket, location via `locsim`, state via Crane) on a jailbroken device. The framework architecture (`tinder-panel.py`, `tinder.py`) provides a powerful tool for security analysis. While challenges like UI fragility and dependency on specific tools exist, OMEGA-T validates that sophisticated automation is achievable, highlighting significant security implications and paving the way for my subsequent research into bypassing advanced bot mitigation systems like Arkose Labs.
+Through the design and implementation of OMEGA-T, I have demonstrated the practical feasibility of achieving scalable, automated account generation on Tinder for iOS by integrating UI automation with dynamic control over the application's perceived environment (network via Shadowrocket, location via `locsim`, state via Crane) on multiple jailbroken devices. The framework architecture (`tinder-panel.py`, `tinder.py`) provides a powerful tool for security analysis. While challenges like UI fragility and dependency on specific tools exist, OMEGA-T validates that sophisticated automation is achievable, highlighting significant security implications and paving the way for my subsequent research into bypassing advanced bot mitigation systems like Arkose Labs (already completed but not published). 
 
 ---
