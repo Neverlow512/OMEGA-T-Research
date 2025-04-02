@@ -23,6 +23,7 @@ In this report, I present **OMEGA-T (Orchestrated Mobile Environment Manipulatio
 **1.1. Research Motivation:** My interest lies in understanding the practical attack surface of widely used mobile applications. The ability to automate account creation at scale is a foundational capability for various offensive security scenarios. Standard UI automation often proves insufficient against modern defenses, leading me to explore integrated approaches that include environment control.
 
 **1.2. Project OMEGA-T Goals:** My primary goals in developing OMEGA-T were to:
+
     *   Engineer a framework capable of orchestrating complex, multi-tool automation sequences on iOS.
     *   Demonstrate the integration of UI automation (Appium/XCUITest) with dynamic, on-device environment manipulation tools (proxy managers, location spoofers, containerization).
     *   Apply this framework to fully automate the Tinder iOS account registration workflow as a practical case study.
