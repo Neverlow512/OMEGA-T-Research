@@ -61,7 +61,7 @@ I designed OMEGA-T with several interconnected subsystems, reflecting the code s
     *   **External APIs:** Third-party services for SMS verification and GeoIP lookup.
 
       
-**Architecture Diagram (Mermaid Syntax):**
+**Architecture Diagram:**
 
 ```mermaid
 graph TD
@@ -76,6 +76,10 @@ graph TD
         Engine -- "Writes" --> LogFile["account_creation.log"]
         Engine -- "Writes" --> TokenFile["tokens.txt"]
         Engine -- "Connects" --> Appium["Appium Server v2.x"]
+
+        % --- Add Loop Arrow Here ---
+        Engine -- "Repeats Cycle<br>for Next Account Input" --> Engine
+        % --------------------------
     end
 
     subgraph "External Services"
