@@ -77,9 +77,7 @@ graph TD
         Engine -- "Writes" --> TokenFile["tokens.txt"]
         Engine -- "Connects" --> Appium["Appium Server v2.x"]
 
-        % --- Add Loop Arrow Here ---
         Engine -- "Repeats Cycle<br>for Next Account Input" --> Engine
-        % --------------------------
     end
 
     subgraph "External Services"
