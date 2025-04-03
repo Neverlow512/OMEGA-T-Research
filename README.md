@@ -283,7 +283,7 @@ OMEGA-T provides a solid foundation. My immediate next steps involve:
 
 *   **UI Resilience:** Exploring more robust element identification methods, implementing advanced ML-based behavior and path recognition.
 *   **Advanced Evasion:** Researching techniques to counter more sophisticated fingerprinting and behavioral analysis.
-*   **Analyzing Advanced Defenses:** Leveraging the OMEGA-T framework and methodology to systematically analyze and develop bypass techniques for advanced anti-bot systems. This is the focus of my next report: **"Breaking the Unbreakable: Analyzing Arkose Labs' CAPTCHA Resilience in iOS Apps"**.
+*   **Analyzing Advanced Defenses:** Leveraging the OMEGA-T framework and methodology to systematically analyze and develop bypass techniques for advanced anti-bot systems. This is the focus of my next report: [*"Breaking the Unbreakable: A Practical Analysis of Arkose Labs' CAPTCHA Resilience via Orchestrated Visual Relay on iOS"*](https://github.com/Neverlow512/Breaking-the-Unbreakable-iOS-Captcha-Research/blob/main/README.md).
 
 ---
 
