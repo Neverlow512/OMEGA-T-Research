@@ -43,7 +43,7 @@ From an offensive simulation perspective, my strategy with OMEGA-T was to overco
 *   **Implementing Dynamic Context Control:** Actively modifying the network perception (via Shadowrocket proxies), geographical location (via `locsim`), and application state (via Crane containers) for each distinct account creation attempt. This aims to defeat basic fingerprinting tied to static IPs or device state.
 *   **Designing for Scalability:** Creating the Flask C2 panel to manage bulk inputs and control automation runs efficiently.
 *   **Enhancing Realism:** Incorporating configurable options for profile details (hobbies, habits, etc.) to reduce the homogeneity of generated accounts.
-*   **Reproducing Human-Like Behavior:** Unpredictable waiting times, touches, scrolls, and the list goes on. I would prefer to keep the rest for myself as I really don't want these methods to be replicated. 
+*   **Reproducing Human-Like Behavior:** Unpredictable waiting times, touches, scrolls,  and several other randomized behavioral features were implemented. I would prefer to keep the rest private in order not to facilitate their replication by potentially malicious actors. 
 
 My core hypothesis was that controlling the *environment* is as critical as controlling the UI for achieving resilient, large-scale automation against mobile platforms.
 
